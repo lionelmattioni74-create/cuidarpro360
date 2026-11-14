@@ -1,0 +1,542 @@
+<!DOCTYPE html>
+<html lang="es" class="h-full bg-slate-950">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CuidarPro 360 · Órbita 360</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        brand: { 50: '#f0fdf4', 500: '#10b981', 600: '#059669', 900: '#064e3b', dark: '#090d16' }
+                    }
+                }
+            }
+        }
+    </script>
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body class="h-full text-slate-100 flex flex-col font-sans selection:bg-emerald-500 selection:text-white" x-data="appData()" x-init="init()">
+
+    <!-- HEADER / NAVEGACIÓN -->
+    <header class="bg-slate-900 border-b border-slate-800 sticky top-0 z-30 shadow-lg">
+        <div class="max-w-7xl mx-auto px-4 py-3 flex flex-col sm:flex-row justify-between items-center gap-3">
+            <div class="flex items-center gap-3">
+                <div class="bg-emerald-500/10 border border-emerald-500/30 p-2.5 rounded-xl text-emerald-400">
+                    <i class="fa-solid fa-heart-pulse text-xl"></i>
+                </div>
+                <div>
+                    <h1 class="font-bold text-lg tracking-tight text-white flex items-center gap-2">
+                        CuidarPro 360 <span class="text-xs bg-emerald-500/20 text-emerald-400 px-2 py-0.5 rounded-full border border-emerald-500/30">Órbita 360</span>
+                    </h1>
+                    <p class="text-xs text-slate-400">Gestión profesional para niñeras y cuidadores de adultos</p>
+                </div>
+            </div>
+
+            <div class="flex items-center gap-2 bg-slate-950 p-1 rounded-xl border border-slate-800 overflow-x-auto max-w-full">
+                <button @click="activeTab = 'hours'" 
+                        :class="activeTab === 'hours' ? 'bg-emerald-600 text-white shadow' : 'text-slate-400 hover:text-white'"
+                        class="px-3 py-2 rounded-lg text-xs sm:text-sm font-medium transition flex items-center gap-1.5 whitespace-nowrap">
+                    <i class="fa-solid fa-clock"></i> Horas & Sueldo
+                </button>
+                <button @click="activeTab = 'log'" 
+                        :class="activeTab === 'log' ? 'bg-emerald-600 text-white shadow' : 'text-slate-400 hover:text-white'"
+                        class="px-3 py-2 rounded-lg text-xs sm:text-sm font-medium transition flex items-center gap-1.5 whitespace-nowrap">
+                    <i class="fa-solid fa-book-medical"></i> Bitácora
+                </button>
+                <button @click="activeTab = 'tasks'" 
+                        :class="activeTab === 'tasks' ? 'bg-emerald-600 text-white shadow' : 'text-slate-400 hover:text-white'"
+                        class="px-3 py-2 rounded-lg text-xs sm:text-sm font-medium transition flex items-center gap-1.5 whitespace-nowrap">
+                    <i class="fa-solid fa-list-check"></i> Tareas & Meds
+                </button>
+                <button @click="activeTab = 'emergency'" 
+                        :class="activeTab === 'emergency' ? 'bg-emerald-600 text-white shadow' : 'text-slate-400 hover:text-white'"
+                        class="px-3 py-2 rounded-lg text-xs sm:text-sm font-medium transition flex items-center gap-1.5 whitespace-nowrap">
+                    <i class="fa-solid fa-triangle-exclamation"></i> Emergencia
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- CONTENIDO PRINCIPAL -->
+    <main class="flex-1 max-w-7xl w-full mx-auto p-4 sm:p-6 overflow-y-auto space-y-6">
+
+        <!-- ================= MÓDULO 1: HORAS Y SUELDO ================= -->
+        <div x-show="activeTab === 'hours'" class="space-y-6" style="display: none;" :style="activeTab === 'hours' ? 'display: block;' : 'display: none;'">
+            
+            <!-- Resumen Superior -->
+            <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                <div class="bg-slate-900 border border-slate-800 p-5 rounded-2xl shadow">
+                    <p class="text-xs text-slate-400 font-medium">Total Horas Trabajadas (Mes)</p>
+                    <h3 class="text-2xl font-bold text-white mt-1" x-text="totalHoursWorked + ' hrs'"></h3>
+                </div>
+                <div class="bg-slate-900 border border-slate-800 p-5 rounded-2xl shadow">
+                    <p class="text-xs text-slate-400 font-medium">Sueldo Acumulado (ARS)</p>
+                    <h3 class="text-2xl font-bold text-emerald-400 mt-1" x-text="formatCurrency(totalEarnings)"></h3>
+                </div>
+                <div class="bg-slate-900 border border-slate-800 p-5 rounded-2xl shadow flex items-center justify-between">
+                    <div>
+                        <p class="text-xs text-slate-400 font-medium">Tarifa por Hora ($ ARS)</p>
+                        <div class="flex items-center gap-2 mt-1">
+                            <input type="number" x-model.number="hourlyRate" @input="saveData()" class="w-32 bg-slate-950 border border-slate-800 rounded-lg px-2 py-1 text-sm text-emerald-400 font-bold focus:outline-none focus:border-emerald-500">
+                        </div>
+                    </div>
+                    <div class="flex gap-1.5">
+                        <button @click="loadDemoData()" title="Cargar Demo" class="bg-slate-800 hover:bg-slate-700 text-xs px-2.5 py-2 rounded-xl border border-slate-700 font-medium transition">Demo</button>
+                        <button @click="clearAllData()" title="Limpiar datos" class="bg-rose-950/40 hover:bg-rose-900/50 text-rose-400 text-xs px-2.5 py-2 rounded-xl border border-rose-900/50 font-medium transition"><i class="fa-solid fa-trash"></i></button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Fichaje / Nuevo Turno -->
+            <div class="bg-slate-900 border border-slate-800 rounded-2xl p-6 space-y-4 shadow-xl">
+                <h3 class="font-bold text-lg text-white flex items-center gap-2">
+                    <i class="fa-solid fa-business-time text-emerald-400"></i> Registrar Jornada de Trabajo
+                </h3>
+                
+                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                    <div class="space-y-1.5">
+                        <label class="text-xs font-medium text-slate-300">Fecha</label>
+                        <input type="date" x-model="newShift.date" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2.5 text-sm text-white focus:outline-none focus:border-emerald-500">
+                    </div>
+                    <div class="space-y-1.5">
+                        <label class="text-xs font-medium text-slate-300">Paciente / Niño / Familia</label>
+                        <input type="text" x-model="newShift.client" placeholder="Ej: Don Carlos / Mateo" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2.5 text-sm text-white focus:outline-none focus:border-emerald-500">
+                    </div>
+                    <div class="space-y-1.5">
+                        <label class="text-xs font-medium text-slate-300">Hora Entrada</label>
+                        <input type="time" x-model="newShift.checkIn" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2.5 text-sm text-white focus:outline-none focus:border-emerald-500">
+                    </div>
+                    <div class="space-y-1.5">
+                        <label class="text-xs font-medium text-slate-300">Hora Salida</label>
+                        <input type="time" x-model="newShift.checkOut" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2.5 text-sm text-white focus:outline-none focus:border-emerald-500">
+                    </div>
+                </div>
+
+                <div class="space-y-1.5">
+                    <label class="text-xs font-medium text-slate-300">Observaciones o Tareas realizadas</label>
+                    <input type="text" x-model="newShift.notes" placeholder="Ej: Control de presión, paseo por la plaza, almuerzo" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2.5 text-sm text-white focus:outline-none focus:border-emerald-500">
+                </div>
+
+                <div class="flex justify-end pt-2">
+                    <button @click="addShift()" class="bg-emerald-600 hover:bg-emerald-500 text-white font-bold px-6 py-2.5 rounded-xl transition text-sm flex items-center gap-2 shadow-lg shadow-emerald-900/30">
+                        <i class="fa-solid fa-plus"></i> Registrar Jornada
+                    </button>
+                </div>
+            </div>
+
+            <!-- Historial y Resumen de Cobro -->
+            <div class="bg-slate-900 border border-slate-800 rounded-2xl p-6 space-y-4 shadow-xl">
+                <div class="flex flex-col sm:flex-row justify-between items-center gap-3 border-b border-slate-800 pb-4">
+                    <h3 class="font-bold text-lg text-white flex items-center gap-2">
+                        <i class="fa-solid fa-clipboard-list text-emerald-400"></i> Historial de Jornadas
+                    </h3>
+                    <button @click="sendSalaryReportWhatsApp()" class="bg-emerald-950/60 hover:bg-emerald-900/60 text-emerald-400 text-xs px-4 py-2 rounded-xl border border-emerald-900/50 font-semibold transition flex items-center gap-1.5">
+                        <i class="fa-brands fa-whatsapp text-sm"></i> Enviar Resumen de Cobro por WhatsApp
+                    </button>
+                </div>
+
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left border-collapse">
+                        <thead>
+                            <tr class="border-b border-slate-800 text-xs text-slate-400 uppercase tracking-wider">
+                                <th class="py-3 px-4">Fecha</th>
+                                <th class="py-3 px-4">Paciente / Familia</th>
+                                <th class="py-3 px-4">Horario</th>
+                                <th class="py-3 px-4">Horas</th>
+                                <th class="py-3 px-4">Subtotal (ARS)</th>
+                                <th class="py-3 px-4 text-right">Acciones</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-slate-800/60 text-sm">
+                            <template x-for="s in shifts" :key="s.id">
+                                <tr class="hover:bg-slate-800/40 transition">
+                                    <td class="py-3 px-4 font-medium text-white" x-text="s.date"></td>
+                                    <td class="py-3 px-4">
+                                        <div class="font-bold text-emerald-400" x-text="s.client"></div>
+                                        <div class="text-xs text-slate-400" x-text="s.notes"></div>
+                                    </td>
+                                    <td class="py-3 px-4 text-slate-300" x-text="s.checkIn + ' a ' + s.checkOut"></td>
+                                    <td class="py-3 px-4 text-white font-semibold" x-text="calculateHours(s.checkIn, s.checkOut) + ' hrs'"></td>
+                                    <td class="py-3 px-4 font-bold text-emerald-400" x-text="formatCurrency(calculateHours(s.checkIn, s.checkOut) * hourlyRate)"></td>
+                                    <td class="py-3 px-4 text-right">
+                                        <button @click="deleteShift(s.id)" class="text-rose-400 hover:text-rose-300 p-2"><i class="fa-solid fa-trash text-xs"></i></button>
+                                    </td>
+                                </tr>
+                            </template>
+                            <template x-if="shifts.length === 0">
+                                <tr>
+                                    <td colspan="6" class="text-center py-8 text-slate-500 text-sm">No hay jornadas registradas aún.</td>
+                                </tr>
+                            </template>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+        </div>
+
+        <!-- ================= MÓDULO 2: BITÁCORA / REPORTE DIARIO ================= -->
+        <div x-show="activeTab === 'log'" class="space-y-6" style="display: none;" :style="activeTab === 'log' ? 'display: block;' : 'display: none;'">
+            <div class="bg-slate-900 border border-slate-800 rounded-2xl p-6 space-y-4 shadow-xl">
+                <h3 class="font-bold text-lg text-white flex items-center gap-2">
+                    <i class="fa-solid fa-notes-medical text-emerald-400"></i> Bitácora Diaria / Reporte para la Familia
+                </h3>
+                <p class="text-xs text-slate-400">Anotá las novedades del día (medicación, alimentación, estado de ánimo, actividades) para dejar un registro claro.</p>
+
+                <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                    <div class="space-y-1.5">
+                        <label class="text-xs font-medium text-slate-300">Categoría</label>
+                        <select x-model="newLog.category" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2.5 text-sm text-white focus:outline-none focus:border-emerald-500">
+                            <option value="Medicación">💊 Medicación</option>
+                            <option value="Alimentación">🍎 Alimentación / Comida</option>
+                            <option value="Descanso">😴 Descanso / Siesta</option>
+                            <option value="Salud">🌡️ Salud / Presión / Síntomas</option>
+                            <option value="Higiene">🚿 Higiene / Cambio</option>
+                            <option value="Actividad">🎨 Actividad / Paseo</option>
+                            <option value="Nota">📌 Nota General</option>
+                        </select>
+                    </div>
+                    <div class="space-y-1.5">
+                        <label class="text-xs font-medium text-slate-300">Hora</label>
+                        <input type="time" x-model="newLog.time" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2.5 text-sm text-white focus:outline-none focus:border-emerald-500">
+                    </div>
+                    <div class="space-y-1.5 sm:col-span-3">
+                        <label class="text-xs font-medium text-slate-300">Detalle de la Novedad</label>
+                        <div class="flex gap-2">
+                            <input type="text" x-model="newLog.detail" placeholder="Ej: Tomó la pastilla de la presión a las 10:00 hs. Almorzó milanesa con puré." class="flex-1 bg-slate-950 border border-slate-800 rounded-xl px-3 py-2.5 text-sm text-white focus:outline-none focus:border-emerald-500">
+                            <button @click="addLog()" class="bg-emerald-600 hover:bg-emerald-500 text-white font-bold px-6 py-2.5 rounded-xl transition text-sm shadow-lg">Agregar</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Listado de la Bitácora de Hoy -->
+            <div class="bg-slate-900 border border-slate-800 rounded-2xl p-6 space-y-4 shadow-xl">
+                <div class="flex flex-col sm:flex-row justify-between items-center gap-3 border-b border-slate-800 pb-4">
+                    <div>
+                        <h3 class="font-bold text-lg text-white flex items-center gap-2">
+                            <i class="fa-solid fa-list text-emerald-400"></i> Registro de Hoy (<span x-text="todayDate"></span>)
+                        </h3>
+                    </div>
+                    <button @click="sendDailyReportWhatsApp()" class="bg-emerald-950/60 hover:bg-emerald-900/60 text-emerald-400 text-xs px-4 py-2 rounded-xl border border-emerald-900/50 font-semibold transition flex items-center gap-1.5">
+                        <i class="fa-brands fa-whatsapp text-sm"></i> Enviar Reporte del Día a la Familia
+                    </button>
+                </div>
+
+                <div class="space-y-3">
+                    <template x-for="log in todayLogs" :key="log.id">
+                        <div class="bg-slate-950 border border-slate-800/80 rounded-xl p-4 flex justify-between items-start gap-4">
+                            <div class="space-y-1">
+                                <div class="flex items-center gap-2">
+                                    <span class="text-xs font-bold px-2.5 py-0.5 rounded-full bg-emerald-950 text-emerald-400 border border-emerald-900/50" x-text="log.category"></span>
+                                    <span class="text-xs text-slate-400 font-mono" x-text="log.time"></span>
+                                </div>
+                                <p class="text-sm text-white mt-1" x-text="log.detail"></p>
+                            </div>
+                            <button @click="deleteLog(log.id)" class="text-rose-400 hover:text-rose-300 p-1"><i class="fa-solid fa-trash text-xs"></i></button>
+                        </div>
+                    </template>
+                    <template x-if="todayLogs.length === 0">
+                        <div class="text-center py-8 text-slate-500 text-sm">No hay registros en la bitácora de hoy todavía.</div>
+                    </template>
+                </div>
+            </div>
+        </div>
+
+        <!-- ================= MÓDULO 3: TAREAS Y MEDICACIÓN ================= -->
+        <div x-show="activeTab === 'tasks'" class="space-y-6" style="display: none;" :style="activeTab === 'tasks' ? 'display: block;' : 'display: none;'">
+            <div class="bg-slate-900 border border-slate-800 rounded-2xl p-6 space-y-4 shadow-xl">
+                <div class="flex justify-between items-center border-b border-slate-800 pb-4">
+                    <h3 class="font-bold text-lg text-white flex items-center gap-2">
+                        <i class="fa-solid fa-pills text-emerald-400"></i> Rutina Diaria, Medicamentos y Tareas
+                    </h3>
+                </div>
+
+                <!-- Agregar Tarea -->
+                <div class="grid grid-cols-1 sm:grid-cols-4 gap-3">
+                    <div class="sm:col-span-2">
+                        <input type="text" x-model="newTask.title" placeholder="Ej: Pastilla de la presión / Dar merienda" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2.5 text-sm text-white focus:outline-none focus:border-emerald-500">
+                    </div>
+                    <div>
+                        <input type="time" x-model="newTask.time" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2.5 text-sm text-white focus:outline-none focus:border-emerald-500">
+                    </div>
+                    <div>
+                        <button @click="addTask()" class="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-bold py-2.5 rounded-xl transition text-sm shadow">Agregar Tarea</button>
+                    </div>
+                </div>
+
+                <!-- Listado de Tareas -->
+                <div class="space-y-2 pt-2">
+                    <template x-for="task in tasks" :key="task.id">
+                        <div class="bg-slate-950 border border-slate-800 rounded-xl p-4 flex items-center justify-between gap-4">
+                            <label class="flex items-center gap-3 cursor-pointer flex-1">
+                                <input type="checkbox" @change="toggleTask(task.id)" :checked="task.completed" class="w-5 h-5 accent-emerald-500 rounded cursor-pointer">
+                                <div>
+                                    <p class="text-sm font-medium transition" :class="task.completed ? 'line-through text-slate-500' : 'text-white'" x-text="task.title"></p>
+                                    <span class="text-xs text-emerald-400 font-mono" x-text="task.time"></span>
+                                </div>
+                            </label>
+                            <button @click="deleteTask(task.id)" class="text-rose-400 hover:text-rose-300 p-2"><i class="fa-solid fa-trash text-xs"></i></button>
+                        </div>
+                    </template>
+                    <template x-if="tasks.length === 0">
+                        <div class="text-center py-6 text-slate-500 text-sm">No hay tareas o medicamentos programados.</div>
+                    </template>
+                </div>
+            </div>
+        </div>
+
+        <!-- ================= MÓDULO 4: TARJETA DE EMERGENCIA ================= -->
+        <div x-show="activeTab === 'emergency'" class="space-y-6" style="display: none;" :style="activeTab === 'emergency' ? 'display: block;' : 'display: none;'">
+            <div class="bg-slate-900 border border-rose-900/50 rounded-2xl p-6 space-y-6 shadow-xl">
+                <div class="flex items-center gap-3 border-b border-slate-800 pb-4">
+                    <div class="bg-rose-500/10 border border-rose-500/30 p-3 rounded-xl text-rose-400">
+                        <i class="fa-solid fa-triangle-exclamation text-2xl"></i>
+                    </div>
+                    <div>
+                        <h3 class="font-bold text-lg text-white">Tarjeta de Emergencia & Datos Vitales</h3>
+                        <p class="text-xs text-slate-400">Información esencial para llamados rápidos en caso de urgencia.</p>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div class="bg-slate-950 border border-slate-800 rounded-xl p-5 space-y-3">
+                        <h4 class="text-xs font-bold uppercase tracking-wider text-emerald-400">Datos del Paciente / Niño</h4>
+                        <div class="space-y-2 text-sm">
+                            <div><span class="text-slate-400">Nombre:</span> <strong class="text-white">Don Carlos González</strong></div>
+                            <div><span class="text-slate-400">Dirección:</span> <strong class="text-white">San Martín 450, Sarmiento (Chubut)</strong></div>
+                            <div><span class="text-slate-400">Obra Social / Prepaga:</span> <strong class="text-white">OSDE / PAMI</strong></div>
+                            <div><span class="text-slate-400">Alergias / Cuidados:</span> <strong class="text-rose-400">Hipertenso - Alérgico a la Penicilina</strong></div>
+                        </div>
+                    </div>
+
+                    <div class="bg-slate-950 border border-slate-800 rounded-xl p-5 space-y-3">
+                        <h4 class="text-xs font-bold uppercase tracking-wider text-emerald-400">Contactos de Urgencia</h4>
+                        <div class="space-y-3">
+                            <div class="flex justify-between items-center bg-slate-900 p-3 rounded-lg border border-slate-800">
+                                <div>
+                                    <p class="text-xs text-slate-400">Familiar Responsable (Hija)</p>
+                                    <p class="text-sm font-bold text-white">Mariana González</p>
+                                </div>
+                                <a href="tel:2974555555" class="bg-emerald-600 hover:bg-emerald-500 text-white px-4 py-2 rounded-lg text-xs font-bold transition flex items-center gap-1.5">
+                                    <i class="fa-solid fa-phone"></i> Llamar
+                                </a>
+                            </div>
+
+                            <div class="flex justify-between items-center bg-slate-900 p-3 rounded-lg border border-slate-800">
+                                <div>
+                                    <p class="text-xs text-slate-400">Médico de Cabecera</p>
+                                    <p class="text-sm font-bold text-white">Dr. Pérez (Hospital Local)</p>
+                                </div>
+                                <a href="tel:107" class="bg-rose-600 hover:bg-rose-500 text-white px-4 py-2 rounded-lg text-xs font-bold transition flex items-center gap-1.5">
+                                    <i class="fa-solid fa-truck-medical"></i> Emergencias (107)
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    </main>
+
+    <!-- FOOTER -->
+    <footer class="bg-slate-900 border-t border-slate-800 py-4 text-center text-xs text-slate-500">
+        CuidarPro 360 · Desarrollado para Órbita 360 (Patagonia, Argentina)
+    </footer>
+
+    <!-- SCRIPT DE LÓGICA (Alpine.js) -->
+    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+    <script>
+        function appData() {
+            return {
+                activeTab: 'hours',
+                todayDate: new Date().toISOString().split('T')[0],
+                hourlyRate: 5000,
+
+                newShift: {
+                    date: new Date().toISOString().split('T')[0],
+                    client: 'Don Carlos',
+                    checkIn: '09:00',
+                    checkOut: '13:00',
+                    notes: 'Control de presión y desayuno'
+                },
+
+                shifts: [],
+                logs: [],
+                tasks: [],
+
+                newLog: {
+                    category: 'Medicación',
+                    time: '10:00',
+                    detail: ''
+                },
+
+                newTask: {
+                    title: '',
+                    time: '11:00'
+                },
+
+                init() {
+                    try {
+                        const savedShifts = localStorage.getItem('cuidarpro_shifts');
+                        const savedLogs = localStorage.getItem('cuidarpro_logs');
+                        const savedTasks = localStorage.getItem('cuidarpro_tasks');
+                        const savedRate = localStorage.getItem('cuidarpro_rate');
+
+                        if (savedShifts) this.shifts = JSON.parse(savedShifts);
+                        if (savedLogs) this.logs = JSON.parse(savedLogs);
+                        if (savedTasks) this.tasks = JSON.parse(savedTasks);
+                        if (savedRate) this.hourlyRate = Number(savedRate);
+
+                        if (!savedShifts && !savedLogs) {
+                            this.loadDemoData();
+                        }
+                    } catch (e) {
+                        console.error('Error cargando localStorage', e);
+                        this.loadDemoData();
+                    }
+                },
+
+                saveData() {
+                    try {
+                        localStorage.setItem('cuidarpro_shifts', JSON.stringify(this.shifts));
+                        localStorage.setItem('cuidarpro_logs', JSON.stringify(this.logs));
+                        localStorage.setItem('cuidarpro_tasks', JSON.stringify(this.tasks));
+                        localStorage.setItem('cuidarpro_rate', this.hourlyRate);
+                    } catch (e) {
+                        console.error('Error guardando en localStorage', e);
+                    }
+                },
+
+                formatCurrency(val) {
+                    return '$ ' + Number(val).toLocaleString('es-AR');
+                },
+
+                calculateHours(inTime, outTime) {
+                    if (!inTime || !outTime) return 0;
+                    const [hIn, mIn] = inTime.split(':').map(Number);
+                    const [hOut, mOut] = outTime.split(':').map(Number);
+                    const diff = (hOut * 60 + mOut) - (hIn * 60 + mIn);
+                    return diff > 0 ? Number((diff / 60).toFixed(1)) : 0;
+                },
+
+                get totalHoursWorked() {
+                    return this.shifts.reduce((acc, s) => acc + this.calculateHours(s.checkIn, s.checkOut), 0);
+                },
+
+                get totalEarnings() {
+                    return this.totalHoursWorked * this.hourlyRate;
+                },
+
+                addShift() {
+                    if (!this.newShift.client || !this.newShift.checkIn || !this.newShift.checkOut) return;
+                    this.shifts.push({
+                        id: Date.now(),
+                        ...this.newShift
+                    });
+                    this.saveData();
+                    this.newShift.notes = '';
+                },
+
+                deleteShift(id) {
+                    this.shifts = this.shifts.filter(s => s.id !== id);
+                    this.saveData();
+                },
+
+                sendSalaryReportWhatsApp() {
+                    const msg = `Hola! Te comparto el resumen de horas y cobro en CuidarPro 360:\n\n⏱️ Total Horas: ${this.totalHoursWorked} hrs\n💰 Tarifa por hora: $ ${this.hourlyRate}\n💵 Total a Cobrar: $ ${this.totalEarnings.toLocaleString('es-AR')}\n\nDetalle de jornadas registradas en el sistema.`;
+                    window.open(`https://wa.me/?text=${encodeURIComponent(msg)}`, '_blank');
+                },
+
+                addLog() {
+                    if (!this.newLog.detail) return;
+                    this.logs.push({
+                        id: Date.now(),
+                        date: this.todayDate,
+                        ...this.newLog
+                    });
+                    this.saveData();
+                    this.newLog.detail = '';
+                },
+
+                get todayLogs() {
+                    return this.logs.filter(l => l.date === this.todayDate);
+                },
+
+                deleteLog(id) {
+                    this.logs = this.logs.filter(l => l.id !== id);
+                    this.saveData();
+                },
+
+                sendDailyReportWhatsApp() {
+                    let text = `📋 *Reporte Diario - CuidarPro 360* (${this.todayDate})\n\n`;
+                    if (this.todayLogs.length === 0) {
+                        text += `Sin novedades registradas hoy.`;
+                    } else {
+                        this.todayLogs.forEach(l => {
+                            text += `• [${l.time}] *${l.category}*: ${l.detail}\n`;
+                        });
+                    }
+                    window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, '_blank');
+                },
+
+                addTask() {
+                    if (!this.newTask.title) return;
+                    this.tasks.push({
+                        id: Date.now(),
+                        completed: false,
+                        ...this.newTask
+                    });
+                    this.saveData();
+                    this.newTask.title = '';
+                },
+
+                toggleTask(id) {
+                    const t = this.tasks.find(x => x.id === id);
+                    if (t) {
+                        t.completed = !t.completed;
+                        this.saveData();
+                    }
+                },
+
+                deleteTask(id) {
+                    this.tasks = this.tasks.filter(t => t.id !== id);
+                    this.saveData();
+                },
+
+                loadDemoData() {
+                    this.shifts = [
+                        { id: 101, date: this.todayDate, client: 'Don Carlos', checkIn: '09:00', checkOut: '13:00', notes: 'Control de presión y desayuno' },
+                        { id: 102, date: '2026-11-12', client: 'Mateo (Niñero)', checkIn: '15:00', checkOut: '19:00', notes: 'Merienda y tareas escolares' }
+                    ];
+                    this.logs = [
+                        { id: 201, date: this.todayDate, category: 'Medicación', time: '09:30', detail: 'Tomó la pastilla de la presión con agua.' },
+                        { id: 202, date: this.todayDate, category: 'Alimentación', time: '12:00', detail: 'Almorzó fideos con salsa y compota.' }
+                    ];
+                    this.tasks = [
+                        { id: 301, title: 'Tomar pastilla de la presión', time: '09:30', completed: true },
+                        { id: 302, title: 'Almuerzo y caminata corta', time: '12:30', completed: false }
+                    ];
+                    this.saveData();
+                },
+
+                clearAllData() {
+                    if (confirm('¿Borrar todos los registros y datos?')) {
+                        localStorage.clear();
+                        this.shifts = [];
+                        this.logs = [];
+                        this.tasks = [];
+                        this.hourlyRate = 5000;
+                    }
+                }
+            }
+        }
+    </script>
+</body>
+</html>
